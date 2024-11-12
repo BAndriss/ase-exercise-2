@@ -1,0 +1,101 @@
+#!/usr/local/bin/java --source 21
+// TODO: Update path of your Java binary if necessary
+
+//For writing this hook, I used GitHub Copilot and ChatGPT
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class CommitMsgHook {
+
+	private static final String TYPE_REGEX = "^(feat|fix|doc|style|refactor|test|chore|build|ci|perf|other)(\\([a-zA-Z0-9-]+\\))?!?";
+	private static final String FOOTER_REGEX = "^(Reviewed-by|Fix|BREAKING CHANGE|BREAKING-CHANGE|Closes|Related-to): .+";
+    private static final String BREAKING_CHANGE_REGEX = "^BREAKING[- ]?CHANGE: .+";
+
+	public static void main(String[] args) {
+		System.out.println(args.length);
+		if (args.length != 1) {
+			System.out.println("Commit message must be passed as the first argument.");
+			System.exit(1);
+		}
+
+		try{
+			validateCommitMessage(args[0]);
+		} catch (IllegalArgumentException e) {
+			System.out.println(e.getMessage());
+			System.out.println("Commit message: " + args[0]);
+			System.out.println("Blocking commit.");
+			System.exit(1);
+		}
+		
+
+		System.out.println("Commit message: " + args[0]);
+		System.exit(0);
+	}
+
+	public static void validateCommitMessage(String commitMessage) {
+
+		if(!commitMessage.contains(":")){
+			throw new IllegalArgumentException("Commit message must follow 'type: description' format and type must be one of: and description must be non-empty.");
+		}
+		String type = commitMessage.split(":")[0].trim();
+		if(type.isEmpty()){
+			throw new IllegalArgumentException("Commit message must have a non-empty type.");
+		}
+		if(!type.matches(TYPE_REGEX)){
+			throw new IllegalArgumentException("Commit message must have a type, which can be a following:.");
+		}
+
+		String description = commitMessage.split(":")[1].trim();
+		if(description.isEmpty()){
+			throw new IllegalArgumentException("Commit message must have a non-empty description.");
+		}
+		int new_line_count = commitMessage.split("\n", -1).length -1;
+		System.out.println("New line count: " + new_line_count);
+		if(new_line_count > 0){//has body
+			System.out.println("Has body");
+			if(new_line_count == 1){
+				throw new IllegalArgumentException("The body must start one blank line after the description if provided.");
+			}
+			String body = commitMessage.substring(commitMessage.indexOf("\n") + 2).trim();
+			if (body.isEmpty()) {
+				throw new IllegalArgumentException("The body can't be empty.");
+			}
+
+			// Check FOOTER
+			String[] bodyParts = body.split("\n");
+			footer = bodyParts[bodyParts.length - 1];
+			System.out.println("Foooter");
+			System.out.println("Footer: " + footer);
+			if (footer.contains(":")){//Has footer
+				String[] footer_parts = footer.split(":");
+				String footer_type = footer_parts[0].trim();
+				if(!footer_type.contains(" ")){
+					if(!footer_type.matches("BREAKING CHANGE")){
+						throw new IllegalArgumentException("Invalid footer. Footer type can't contains SPACE.");
+					}
+				}
+			}
+		}
+
+		// (7) Check for valid footer format
+        Matcher footerMatcher = Pattern.compile(FOOTER_REGEX).matcher(commitMessage);
+        if (footerMatcher.find() && !footerMatcher.group().matches("^(Reviewed-by|Fix|BREAKING CHANGE|BREAKING-CHANGE|Closes|Related-to):.*")) {
+            throw new IllegalArgumentException("Invalid footer format. Valid footer tokens are 'Reviewed-by', 'Fix', 'BREAKING CHANGE', 'BREAKING-CHANGE', 'Closes', 'Related-to'.");
+        }
+		// (8) Check for valid breaking change format (either in type or footer)
+		if (commitMessage.contains("!:") && !commitMessage.matches(BREAKING_CHANGE_REGEX)) {
+            throw new IllegalArgumentException("Breaking change must be properly indicated in the footer or with '!' in the type.");
+        }
+
+		if(!commitMessage.contains("!:") && commitMessage.contains("BREAKING CHANGE") && !commitMessage.matches(BREAKING_CHANGE_REGEX)){
+			throw new IllegalArgumentException("Breaking change must be properly indicated in the footer or with '!' in the type.");
+		}
+
+		// (10) Reject lowercase breaking change footer
+		if (commitMessage.contains("breaking change") && !commitMessage.matches(BREAKING_CHANGE_REGEX)) {
+            throw new IllegalArgumentException("Breaking change footer must be uppercase.");
+        }
+		
+	}
+}
