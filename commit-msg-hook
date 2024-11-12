@@ -2,7 +2,7 @@
 // TODO: Update path of your Java binary if necessary
 
 //For writing this hook, I used GitHub Copilot and ChatGPT
-
+//Add comments for Exercise 2.2. First line
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
