@@ -5,7 +5,7 @@
 //Add comments for Exercise 2.2. First line
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+//Add comments for Exercise 2.2. Second line
 public class CommitMsgHook {
 
 	private static final String TYPE_REGEX = "^(feat|fix|doc|style|refactor|test|chore|build|ci|perf|other)(\\([a-zA-Z0-9-]+\\))?!?";
